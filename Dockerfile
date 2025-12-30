@@ -32,6 +32,7 @@ apt install -y --no-install-recommends \
     wget \
     gnupg \
     ca-certificates \
+    locales \
     locales-all \
     procps \
     apt-transport-https \
@@ -140,6 +141,9 @@ Storage=volatile
 ForwardToSyslog=no
 RuntimeMaxUse=50M
 EOF
+
+# Config OpenSSH
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # Default share volumes
 VOLUME "/usr/lib/modules" "/sys/fs/cgroup"
