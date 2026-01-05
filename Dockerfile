@@ -144,7 +144,7 @@ systemctl mask \
 EOF
 
 # Prevent Docker DNS NAT rules from being flushed when using user-defined bridge
-RUN systemctl disable nftables.service
+RUN systemctl mask nftables.service
 
 # Prevent pvenetcommit from overwriting /etc/network/interfaces
 RUN rm -f /etc/network/interfaces.new
