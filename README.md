@@ -210,6 +210,14 @@ docker restart pve-1 pve-2 pve-3
 > 
 > On Docker Desktop (Windows/macOS), use separate browser profiles for each node to avoid authentication conflicts ("invalid PVE ticket 401" errors caused by cookie collisions).
 
+> [!Note]
+> To create the cluster, edit the `eth0` interface like this on **pve-1** node, then go to Datacenter → Cluster → Create Cluster → Copy Join Information
+> 
+> Other nodes go to Datacenter → Cluster → Join Cluster → Paste the copied Join Information → Enter password
+> <p align="center">
+>   <img src="https://github.com/LongQT-sea/containerized-proxmox/raw/main/.github/pve-1_eth0_interface.png" alt="PVE network">
+> </p>
+
 Nodes can reach each other over hostname or IP address:
 | hostname | IPv4       | IPv6    |
 |----------|------------|---------|
