@@ -13,6 +13,7 @@
 #    --security-opt seccomp=profile.json \
 #    --security-opt apparmor=unconfined \
 #    --cap-add=SYS_ADMIN \
+#    --cap-add=NET-ADMIN \
 #    proxmox-datacenter-manager
 #
 # Set root password:

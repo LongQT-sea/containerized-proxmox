@@ -10,8 +10,8 @@
 # docker run -d --name pve-1 --hostname pve-1 \
 #     -p 2222:22 -p 3128:3128 -p 8006:8006 \
 #     --restart unless-stopped  \
-#     --privileged --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup \
-#     --device /dev/watchdog \
+#     --privileged --cgroupns=private \
+#     --device /dev/kvm \
 #     -v /dev/vfio:/dev/vfio \
 #     -v /usr/lib/modules:/usr/lib/modules:ro \
 #     -v /sys/kernel/security:/sys/kernel/security \
@@ -19,7 +19,7 @@
 #     -v ./ISOs:/var/lib/vz/template/iso \
 #     proxmox-ve
 
-FROM debian:13
+FROM debian:13-slim
 
 # Set build time variables
 ARG DEBIAN_FRONTEND=noninteractive
@@ -27,53 +27,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Set environment variables
 ENV TERM="xterm-256color"
 
-# Install base packages
+# Install curl
 RUN <<EOF
 apt update
 apt install -y --no-install-recommends \
-    systemd \
-    systemd-sysv \
-    bash-completion \
-    dbus \
-    iproute2 \
-    kmod \
-    sudo \
-    curl \
-    wget \
-    gnupg \
     ca-certificates \
-    locales \
-    procps \
-    apt-transport-https \
-    e2fsprogs \
-    btrfs-progs \
-    ntfs-3g \
-    nano \
-    vim-tiny \
-    less \
-    openssh-server \
-    whiptail \
-    cpio
-locale-gen en_US.UTF-8
-apt autoremove -y
-apt clean
-rm -rf /var/lib/apt/lists/*
-EOF
-
-# Install network packages
-RUN <<EOF
-apt update
-apt install -y --no-install-recommends \
-    iputils-ping \
-    ethtool \
-    traceroute \
-    dnsutils \
-    dnsmasq \
-    isc-dhcp-client \
-    wireguard-tools \
-    iptables \
-    bridge-utils
-apt autoremove -y
+    curl
 apt clean
 rm -rf /var/lib/apt/lists/*
 EOF
@@ -99,9 +58,46 @@ Pin: release *
 Pin-Priority: -1
 EOF
 
-# Install Proxmox VE
+# Install base packages
 RUN <<EOF
 apt update
+apt install -y --no-install-recommends \
+    systemd-sysv \
+    bash-completion \
+    dbus \
+    kmod \
+    sudo \
+    wget \
+    gnupg \
+    locales \
+    procps \
+    apt-transport-https \
+    e2fsprogs \
+    btrfs-progs \
+    ntfs-3g \
+    nano \
+    vim-tiny \
+    less \
+    openssh-server \
+    whiptail \
+    cpio
+locale-gen en_US.UTF-8
+
+# Install network packages
+apt install -y --no-install-recommends \
+    iputils-ping \
+    ifupdown2 \
+    iproute2 \
+    ethtool \
+    traceroute \
+    dnsutils \
+    dnsmasq \
+    isc-dhcp-client \
+    wireguard-tools \
+    iptables \
+    bridge-utils
+
+# Install Proxmox VE
 apt install -y --no-install-recommends \
     postfix \
     open-iscsi \
@@ -140,7 +136,8 @@ systemctl mask \
     getty.target \
     console-getty.service \
     systemd-firstboot.service \
-    systemd-networkd-wait-online.service
+    systemd-networkd-wait-online.service \
+    watchdog-mux.service
 EOF
 
 # Prevent Docker DNS NAT rules from being flushed when using user-defined bridge
@@ -269,7 +266,6 @@ alias du='du -hs'
 EOF
 
 # Config journald (store in RAM only)
-RUN mkdir -p /etc/systemd/journald.conf.d
 COPY <<EOF /etc/systemd/journald.conf.d/container.conf
 [Journal]
 Storage=volatile
@@ -287,7 +283,7 @@ cat > /etc/rc.local <<'EOF1'
 #!/bin/bash
 # Add loop devices for LXC
 modprobe loop
-for i in $(seq 0 50); do
+for i in $(seq 0 30); do
   if [ ! -e /dev/loop$i ]; then
     mknod -m 0660 /dev/loop$i b 7 $i
   fi
@@ -298,8 +294,19 @@ EOF1
 chmod +x /etc/rc.local
 EOF
 
-# Default share volumes
-VOLUME "/usr/lib/modules" "/sys/fs/cgroup" "/sys/kernel/security" "/dev/vfio"
+# Create entrypoint script
+COPY <<'EOF' /entrypoint.sh
+#!/bin/bash
+# Remount cgroup2 as read-write (F docker)
+if mount | grep -q '/sys/fs/cgroup.*ro,'; then
+    umount /sys/fs/cgroup
+    mount -t cgroup2 cgroup2 /sys/fs/cgroup -o rw,nosuid,nodev,noexec
+fi
+
+# Boot systemd init 
+exec /sbin/init
+EOF
+RUN chmod +x /entrypoint.sh
 
 # Set working dir
 WORKDIR "/root"
@@ -312,8 +319,8 @@ EXPOSE 22/tcp
 # Shutdown gracefully
 STOPSIGNAL SIGRTMIN+3
 
-# Boot with systemd init
-ENTRYPOINT ["/sbin/init"]
+# Run with entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Labels & Annotations
 LABEL maintainer="LongQT-sea <long025733@gmail.com>"

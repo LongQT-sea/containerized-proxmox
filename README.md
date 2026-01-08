@@ -32,8 +32,8 @@ Standalone node with `docker run`:
 docker run -d --name pve-1 --hostname pve-1 \
     -p 2222:22 -p 3128:3128 -p 8006:8006 \
     --restart unless-stopped  \
-    --privileged --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup \
-    --device /dev/kvm --device /dev/watchdog \
+    --privileged --cgroupns=private \
+    --device /dev/kvm \
     -v /dev/vfio:/dev/vfio \
     -v /usr/lib/modules:/usr/lib/modules:ro \
     -v /sys/kernel/security:/sys/kernel/security \
@@ -70,11 +70,10 @@ services:
     hostname: pve-1
     privileged: true
     restart: unless-stopped
-    cgroup: host
+    cgroup: private
     shm_size: 1g
     devices:
       - /dev/kvm
-      - /dev/watchdog
     networks:
       dual_stack:
         ipv4_address: 10.0.99.1
@@ -87,7 +86,6 @@ services:
       - "8006:8006"   # First node container port 8006 maps to host port 8006
 
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup               # Required for systemd init
       - /usr/lib/modules:/usr/lib/modules:ro        # Required for loading kernel modules
       - /sys/kernel/security:/sys/kernel/security   # Optional, needed for LXC
       - ./VM-Backup:/var/lib/vz/dump                # Shared storage for VM/LXC backups
@@ -101,11 +99,10 @@ services:
     hostname: pve-2
     privileged: true
     restart: unless-stopped
-    cgroup: host
+    cgroup: private
     shm_size: 1g
     devices:
       - /dev/kvm
-      - /dev/watchdog
     networks:
       dual_stack:
         ipv4_address: 10.0.99.2
@@ -118,7 +115,6 @@ services:
       - "8007:8006"   # Second node container port 8006 maps to host port 8007
 
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup               # Required for systemd init
       - /usr/lib/modules:/usr/lib/modules:ro        # Required for loading kernel modules
       - /sys/kernel/security:/sys/kernel/security   # Optional, needed for LXC
       - ./VM-Backup:/var/lib/vz/dump                # Shared storage for VM/LXC backups
@@ -132,11 +128,10 @@ services:
     hostname: pve-3
     privileged: true
     restart: unless-stopped
-    cgroup: host
+    cgroup: private
     shm_size: 1g
     devices:
       - /dev/kvm
-      - /dev/watchdog
     networks:
       dual_stack:
         ipv4_address: 10.0.99.3
@@ -149,7 +144,6 @@ services:
       - "8008:8006"   # Third node container port 8006 maps to host port 8008
 
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup               # Required for systemd init
       - /usr/lib/modules:/usr/lib/modules:ro        # Required for loading kernel modules
       - /sys/kernel/security:/sys/kernel/security   # Optional, needed for LXC
       - ./VM-Backup:/var/lib/vz/dump                # Shared storage for VM/LXC backups
@@ -162,12 +156,11 @@ services:
     container_name: pdm
     hostname: pdm
     restart: unless-stopped
-    cgroup: host
+    cgroup: private
     shm_size: 1g
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup
     cap_add:
-      - ALL
+      - SYS_ADMIN
+      - NET_ADMIN
     security_opt:
       - seccomp=unconfined
       - apparmor=unconfined
@@ -205,7 +198,7 @@ Set root password for all nodes:
    for c in pve-1 pve-2 pve-3; do docker exec $c sh -c 'echo "root:123" | chpasswd'; done
    ```
 - Windows Powershell:
-   ```
+   ```pwsh
    "pve-1","pve-2","pve-3" | % { docker exec $_ sh -c 'echo "root:123" | chpasswd' }
    ```
 
