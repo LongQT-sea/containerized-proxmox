@@ -9,18 +9,16 @@
 # Run:
 # docker run -d --name pdm --hostname pdm \
 #    -p 8443:8443 -p 2222:22 \
-#    --restart unless-stopped \
-#    --cgroupns=host \
-#    -v /sys/fs/cgroup:/sys/fs/cgroup \
-#    --security-opt="seccomp=profile.json" \
+#    --cgroupns=private \
+#    --security-opt seccomp=profile.json \
 #    --security-opt apparmor=unconfined \
-#    --cap-add=ALL \
+#    --cap-add=SYS_ADMIN \
 #    proxmox-datacenter-manager
 #
 # Set root password:
 #    docker exec -it pdm passwd
 
-FROM debian:13
+FROM debian:13-slim
 
 # Set build time variables
 ARG DEBIAN_FRONTEND=noninteractive
@@ -28,31 +26,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Set environment variables
 ENV TERM="xterm-256color"
 
-# Install base packages
+# Install curl
 RUN <<EOF
 apt update
 apt install -y --no-install-recommends \
-    systemd \
-    systemd-sysv \
-    bash-completion \
-    dbus \
-    iproute2 \
-    ifupdown2 \
-    iputils-ping \
-    sudo \
-    curl \
-    wget \
-    gnupg \
     ca-certificates \
-    locales \
-    procps \
-    apt-transport-https \
-    nano \
-    vim-tiny \
-    less \
-    openssh-server
-locale-gen en_US.UTF-8
-apt autoremove -y
+    curl
 apt clean
 rm -rf /var/lib/apt/lists/*
 EOF
@@ -78,10 +57,31 @@ Pin: release *
 Pin-Priority: -1
 EOF
 
-# Install Proxmox Datacenter Manager
+# Install base packages
 RUN <<EOF
-set -e
 apt update
+apt install -y --no-install-recommends \
+    systemd-sysv \
+    bash-completion \
+    dbus \
+    iproute2 \
+    iputils-ping \
+    sudo \
+    wget \
+    locales \
+    procps \
+    nano \
+    vim-tiny \
+    less \
+    busybox \
+    openssh-server
+locale-gen en_US.UTF-8
+ln -s /usr/bin/busybox /usr/bin/nslookup
+ln -s /usr/bin/busybox /usr/bin/traceroute
+ln -s /usr/bin/busybox /usr/bin/nc
+
+# Install Proxmox Datacenter Manager
+set -e
 apt install -y \
     proxmox-datacenter-manager \
     proxmox-mail-forward \
@@ -139,6 +139,20 @@ RUN <<EOF
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 EOF
 
+# Create entrypoint script
+COPY <<'EOF' /entrypoint.sh
+#!/bin/bash
+# Remount cgroup2 as read-write (Fk docker)
+if mount | grep -q '/sys/fs/cgroup.*ro,'; then
+    umount /sys/fs/cgroup
+    mount -t cgroup2 cgroup2 /sys/fs/cgroup -o rw,nosuid,nodev,noexec
+fi
+
+# Boot systemd init 
+exec /sbin/init
+EOF
+RUN chmod +x /entrypoint.sh
+
 # Set working dir
 WORKDIR "/root"
 
@@ -149,8 +163,8 @@ EXPOSE 22/tcp
 # Shutdown gracefully
 STOPSIGNAL SIGRTMIN+3
 
-# Boot with systemd init
-ENTRYPOINT ["/sbin/init"]
+# Run with entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Labels & Annotations
 LABEL maintainer="LongQT-sea <long025733@gmail.com>"
