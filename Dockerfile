@@ -98,9 +98,15 @@ apt install -y --no-install-recommends \
     isc-dhcp-client \
     wireguard-tools \
     iptables \
-    bridge-utils
+    bridge-utils \
+    lsof
+
+# Create dummy file for pve-manager
+mkdir -p /usr/share/doc/pve-manager
+touch /usr/share/doc/pve-manager/aplinfo.dat
 
 # Install Proxmox VE
+set -e
 apt install -y --no-install-recommends \
     postfix \
     open-iscsi \

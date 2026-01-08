@@ -15,12 +15,13 @@ Proxmox cluster in Docker. Learn, test, break, and repeat.
 
 ## Requirements
 
-- Modern Linux host with Kernel 6.8+
+- Modern Linux host with kernel 6.8+
 - [Docker Engine](https://docs.docker.com/engine/install/)
-- Intel VT-x / AMD-V enabled 
-- Docker Desktop on Windows with WSL2:
-   - WSL Kernel should be at least version 6.6 (`wsl --version`)
-   - To run virtual machines, enable nested virtualization in WSL Settings
+- Intel VT-x / AMD-V enabled
+- macOS: Use [OrbStack](https://orbstack.dev/) instead of Docker Desktop
+- Windows 11 with Docker Desktop (WSL2):
+   - WSL kernel version 6.6+ (`wsl --version`)
+   - Nested virtualization enabled in WSL Settings
 
 ---
 
