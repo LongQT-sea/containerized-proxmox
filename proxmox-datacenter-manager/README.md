@@ -3,9 +3,10 @@
 Proxmox Datacenter Manager in Docker, why not!
 
 ## Quick start
-With `docker run`:
+### With `docker run`:
 > [!Note]
-> Remove `--detach` if you want an interactive console, to escape, hold CRTL then press P + Q
+> - Remove `--detach` if you want an interactive console, to escape, hold CTRL then press P + Q
+> - Run `docker attach pdm` to reattach later if needed
 ```bash
 docker run --detach -it --name pdm --hostname pdm \
     -p 8443:8443 -p 2222:22 \
@@ -21,12 +22,9 @@ docker run --detach -it --name pdm --hostname pdm \
 
 Default root password: `123`
 
-To attach to the console:
-```
-docker attach pdm
-```
+---
 
-With Docker Compose:
+### With Docker Compose:
 ```yaml
 services:
   pdm:
@@ -60,6 +58,6 @@ To attach to the console:
 ```
 docker attach pdm
 ```
-To escape, hold CRTL then press P + Q
+To escape, hold CTRL then press P + Q
 
 Access the web UI at https://Docker-IP:8443 (accept the self-signed cert).

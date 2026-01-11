@@ -4,7 +4,8 @@ Powered by [PXVIRT](https://docs.pxvirt.lierfang.com/en/README.html), a forked o
 
 ## Quick Start
 > [!Note]
-> Remove `--detach` if you want an interactive console, to escape, hold CRTL and press P + Q
+> - Remove `--detach` if you want an interactive console, to escape, hold CTRL then press P + Q
+> - Run `docker attach pxvirt-1 ` to reattach later if needed
 ```bash
 docker run --detach -it --name pxvirt-1 --hostname pxvirt-1 \
     -p 2222:22 -p 3128:3128 -p 8006:8006 \
@@ -21,11 +22,5 @@ docker run --detach -it --name pxvirt-1 --hostname pxvirt-1 \
 Replace `./ISOs` with the path to your ISO folder.
 
 Default root password: `123`
-
-To attach to the console:
-```
-docker attach pdm
-```
-To escape, hold CRTL then press P + Q
 
 Access the web UI at https://Docker-IP:8006 (accept the self-signed cert).

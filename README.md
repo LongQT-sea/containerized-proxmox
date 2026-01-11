@@ -29,7 +29,8 @@ Proxmox cluster in Docker. Learn, test, break, and repeat.
 Standalone node with `docker run`:
 > [!Note]
 > - On ARM64 platforms, use `proxmox-ve-arm64` instead of `proxmox-ve`
-> - Remove `--detach` if you want an interactive console, to escape, hold CRTL and press P + Q
+> - Remove `--detach` if you want an interactive console, to escape, hold CTRL then press P + Q
+> - Run `docker attach pve-1` to reattach later if needed
 ```bash
 docker run --detach -it --name pve-1 --hostname pve-1 \
     -p 2222:22 -p 3128:3128 -p 8006:8006 \
