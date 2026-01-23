@@ -65,7 +65,6 @@ apt install -y --no-install-recommends \
     dbus \
     iproute2 \
     ifupdown2 \
-    bridge-utils \
     iputils-ping \
     isc-dhcp-client \
     sudo \
@@ -125,12 +124,10 @@ alias df='df -h'
 alias du='du -hs'
 EOF
 
-# Config journald (store in RAM only)
+# Config journald
 COPY <<EOF /etc/systemd/journald.conf.d/container.conf
 [Journal]
-Storage=volatile
-ForwardToSyslog=no
-RuntimeMaxUse=50M
+RuntimeMaxUse=500M
 EOF
 
 # Config OpenSSH
@@ -183,5 +180,4 @@ LABEL org.opencontainers.image.author="LongQT-sea <long025733@gmail.com>"
 LABEL org.opencontainers.image.description="Proxmox Datacenter Manager in a container"
 
 LABEL io.containers.type="system"
-LABEL io.container.runtime.privileged="true"
 LABEL io.container.runtime.init="true"
