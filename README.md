@@ -64,6 +64,9 @@ Access the web UI at `https://localhost:8006/` (accept the self-signed cert).
 ---
 
 ## Multi-Node Cluster
+> [!Important]
+> If on ARM64 platforms, remove the `pdm:` section because the PDM image is amd64-only.
+
 Deploy 3-node cluster using Docker Compose:
 - Create a project directory and cd into it:
    ```
