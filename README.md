@@ -9,7 +9,7 @@ Proxmox cluster in Docker. Learn, test, break, and repeat.
 - **Dual-Stack Networking** — IPv4 and IPv6 support with pre-configured NAT bridges
 - **KVM & LXC ready** — Virtual machines and containers work out of the box
 - **Central management** — Optional [Proxmox Datacenter Manager](proxmox-datacenter-manager) container included
-- **[ARM64 support](pxvirt)** — Proxmox VE on your favorite ARM platform, powered by [PXVIRT](https://docs.pxvirt.lierfang.com/en/README.html)
+- **ARM64 support** — Proxmox VE on your favorite ARM platform, powered by [PXVIRT](https://docs.pxvirt.lierfang.com/en/README.html)
 
 ---
 
@@ -23,17 +23,20 @@ Proxmox cluster in Docker. Learn, test, break, and repeat.
    - WSL kernel version 6.6+ (`wsl --version`)
    - Nested virtualization enabled in WSL Settings
 
+> [!Important]
+> For ARM64 platforms:<br>
+> Do not config DHCP when create LXC, config IP inside the LXC instead (e.g. `dhclient eth0`)<br>
+> For latest ARM64 LXC template, visit: https://images.linuxcontainers.org/images/
+
 ---
 
 ## Quick Start
 Standalone node with `docker run`:
-> [!Note]
-> - On ARM64 platforms, use [`proxmox-ve-arm64`](pxvirt) instead of `proxmox-ve`
-> - Remove `--detach` if you want an interactive console, to escape, hold CTRL then press P + Q
-> - Run `docker attach pve-1` to reattach later if needed
 
 > [!Tip]
->  For full hardware devices access, add `--privileged` flag
+> Remove `--detach` if you want an interactive console, to escape, hold CTRL then press P + Q<br>
+> Run `docker attach pve-1` to reattach later if needed<br>
+> For full hardware devices access, use `--privileged` flag
 
 ```bash
 docker run --detach -it --name pve-1 --hostname pve-1 \

@@ -1,4 +1,4 @@
-# Proxmox VE 9 Container Dockerfile
+# Proxmox VE / PXVIRT Multi-Arch Container Dockerfile
 #
 # SPDX-License-Identifier: GPLv3 or later
 # Copyright (C) 2025-2026 LongQT-sea
@@ -29,36 +29,53 @@
 #     -e PASSWORD=123 \
 #     proxmox-ve
 
-FROM debian:13-slim
+# Select base image
+FROM --platform=linux/amd64 debian:13-slim AS base-amd64
+FROM --platform=linux/arm64 debian:12-slim AS base-arm64
 
-# Set build time variables
+FROM base-${TARGETARCH} AS base
+
+# Build-time variables
 ARG DEBIAN_FRONTEND=noninteractive
+ARG TARGETARCH
 
-# Set environment variables
 ENV TERM="xterm-256color"
 
 # Install curl
 RUN <<EOF
-apt update
-apt install -y --no-install-recommends \
-    ca-certificates \
-    curl
-apt clean
+apt-get update
+apt-get install -y --no-install-recommends ca-certificates curl
+apt-get clean
 rm -rf /var/lib/apt/lists/*
 EOF
 
-# Add Proxmox VE repository
+# Add repository
 RUN <<EOF
-curl -sL https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg \
-    -o /usr/share/keyrings/proxmox-archive-keyring.gpg
-EOF
-
-COPY <<EOF /etc/apt/sources.list.d/pve-no-subs.sources
+set -e
+case "${TARGETARCH}" in
+    amd64)
+        curl -sL https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg \
+            -o /usr/share/keyrings/proxmox-archive-keyring.gpg
+        cat > /etc/apt/sources.list.d/pve.sources <<'SOURCES'
 Types: deb
 URIs: http://download.proxmox.com/debian/pve
 Suites: trixie
 Components: pve-no-subscription
 Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+SOURCES
+        ;;
+    arm64)
+        curl -sL https://mirrors.lierfang.com/pxcloud/lierfang.gpg \
+            -o /etc/apt/trusted.gpg.d/lierfang.gpg
+        cat > /etc/apt/sources.list.d/pve.sources <<'SOURCES'
+Types: deb
+URIs: https://mirrors.lierfang.com/pxcloud/pxvirt
+Suites: bookworm
+Components: main
+Signed-By: /etc/apt/trusted.gpg.d/lierfang.gpg
+SOURCES
+        ;;
+esac
 EOF
 
 # Block unneeded packages in container
@@ -70,8 +87,8 @@ EOF
 
 # Install base packages
 RUN <<EOF
-apt update
-apt install -y --no-install-recommends \
+apt-get update
+apt-get install -y --no-install-recommends \
     systemd-sysv \
     bash-completion \
     dbus \
@@ -94,7 +111,7 @@ apt install -y --no-install-recommends \
 locale-gen en_US.UTF-8
 
 # Install network packages
-apt install -y --no-install-recommends \
+apt-get install -y --no-install-recommends \
     iputils-ping \
     ifupdown2 \
     iproute2 \
@@ -105,18 +122,16 @@ apt install -y --no-install-recommends \
     isc-dhcp-client \
     wireguard-tools \
     iptables \
-    bridge-utils \
     lsof
 
 # Create dummy file for pve-manager
 mkdir -p /usr/share/doc/pve-manager
 touch /usr/share/doc/pve-manager/aplinfo.dat
 
-# Install Proxmox VE
+# Install Proxmox VE / PXVIRT
 set -e
-apt install -y --no-install-recommends \
+apt-get install -y --no-install-recommends \
     postfix \
-    open-iscsi \
     xfsprogs \
     zfs-zed \
     numactl \
@@ -128,37 +143,45 @@ apt install -y --no-install-recommends \
     pve-manager \
     pve-edk2-firmware \
     proxmox-firewall \
-    pve-esxi-import-tools \
     proxmox-backup-restore-image \
-    proxmox-offline-mirror-helper \
-    pve-nvidia-vgpu-helper
+    proxmox-offline-mirror-helper
+
+if [ "$TARGETARCH" = "amd64" ]; then
+    apt-get install -y --no-install-recommends \
+        open-iscsi \
+        pve-esxi-import-tools \
+        pve-nvidia-vgpu-helper
+fi
 
 # Cleanup
-apt remove -y os-prober || true
-apt autoremove -y
-apt clean
+apt-get remove -y os-prober || true
+apt-get autoremove -y
+apt-get clean
 rm -rf /var/lib/apt/lists/*
-rm -f /etc/apt/sources.list.d/pve-enterprise.sources || true
-rm /etc/machine-id
-rm /var/lib/dbus/machine-id
+rm -f /etc/apt/sources.list.d/pve-enterprise.sources  || true
+rm -f /etc/machine-id
+rm -f /var/lib/dbus/machine-id
 find /var/log -type f -delete
 EOF
 
-# Mask unneeded services in container
+# Mask unneeded services
 RUN <<EOF
 systemctl mask \
     systemd-networkd-wait-online.service \
     watchdog-mux.service
 EOF
 
-# Add signing keys to trustedkeys.gpg keyring for pveam
+# Add keyring for pveam
 RUN <<EOF
 gpg --keyserver keyserver.ubuntu.com --recv-keys \
     A7BCD1420BFE778E \
-    85C25E95A16EB94D
+    85C25E95A16EB94D \
+    39DE63C7D57A32124785E63DB859507D6B1F46D3
+
 gpg --export \
     A7BCD1420BFE778E \
     85C25E95A16EB94D \
+    39DE63C7D57A32124785E63DB859507D6B1F46D3 \
     > /usr/share/doc/pve-manager/trustedkeys.gpg
 rm -rf /root/.gnupg
 EOF
@@ -176,7 +199,7 @@ update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 update-alternatives --set ebtables /usr/sbin/ebtables-legacy
 EOF
 
-# Config /etc/network/interface
+# Config /etc/network/interfaces
 COPY <<EOF /etc/network/interfaces
 auto lo
 iface lo inet loopback
@@ -281,7 +304,7 @@ server=/test/
 EOF
 
 # Config custom bash aliases
-RUN <<EOF cat >> /etc/bash.bashrc
+RUN cat >> /etc/bash.bashrc <<'EOF'
 
 alias ls='ls --color=auto'
 alias l='ls -lah'
@@ -292,10 +315,12 @@ alias ip='ip --color'
 alias bridge='bridge -color'
 alias free='free -h'
 alias df='df -h'
-alias du='du -hs'
+alias dus='du -hxs'
+alias dux='du -hxd1'
 EOF
 
 # Config journald (store in RAM only)
+RUN mkdir -p /etc/systemd/journald.conf.d
 COPY <<EOF /etc/systemd/journald.conf.d/container.conf
 [Journal]
 Storage=volatile
@@ -306,10 +331,10 @@ EOF
 # Config OpenSSH
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# Config LXC
+# # Config LXC
 RUN <<EOF
 sed -i 's/^ConditionVirtualization=!container/#&/' /lib/systemd/system/lxcfs.service
-cat > /etc/rc.local <<'EOF1'
+cat > /etc/rc.local <<'RCLOCAL'
 #!/bin/bash
 # Add loop devices for LXC
 modprobe loop
@@ -321,9 +346,21 @@ done
 
 # Unmask after boot to fix LXC startup issues (masked earlier in entrypoint script)
 umount /sys/class/drm
+RCLOCAL
 
-exit 0
-EOF1
+if [ "$TARGETARCH" = "arm64" ]; then
+cat >> /etc/rc.local <<'RCLOCAL_ARM'
+
+# Update arm64 LXC template
+pveam update 2>/dev/null
+
+# Remove unsupported amd64 turnkeylinux repo
+rm -f /var/lib/pve-manager/apl-info/releases.turnkeylinux.org
+RCLOCAL_ARM
+fi
+
+echo "" >> /etc/rc.local
+echo "exit 0" >> /etc/rc.local
 chmod +x /etc/rc.local
 EOF
 
@@ -367,10 +404,9 @@ RUN chmod +x /entrypoint.sh
 # Run with custom entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Default command to systemd init
+# Default command
 CMD ["/sbin/init", "--log-target=console", "--log-level=info"]
 
-# Set working dir
 WORKDIR "/root"
 
 # Expose Proxmox VE GUI, SPICE proxy, and SSH
@@ -384,11 +420,11 @@ STOPSIGNAL SIGRTMIN+3
 # Labels & Annotations
 LABEL maintainer="LongQT-sea <long025733@gmail.com>"
 LABEL org.opencontainers.image.os="linux"
-LABEL org.opencontainers.image.architecture="amd64"
+LABEL org.opencontainers.image.architecture="${TARGETARCH}"
 LABEL org.opencontainers.image.author="LongQT-sea <long025733@gmail.com>"
-LABEL org.opencontainers.image.description="Proxmox VE in a container"
+LABEL org.opencontainers.image.description="Proxmox VE / PXVIRT multi-arch container"
 
 LABEL io.containers.type="system"
-LABEL io.container.runtime.privileged="true"
 LABEL io.container.runtime.init="true"
 LABEL io.container.runtime.capabilities="ALL"
+
