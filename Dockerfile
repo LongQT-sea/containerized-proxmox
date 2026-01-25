@@ -107,7 +107,8 @@ apt-get install -y --no-install-recommends \
     less \
     openssh-server \
     whiptail \
-    cpio
+    cpio \
+    usbutils
 locale-gen en_US.UTF-8
 
 # Install network packages
