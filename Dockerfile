@@ -52,30 +52,30 @@ EOF
 # Add repository
 RUN <<EOF
 set -e
-case "${TARGETARCH}" in
-    amd64)
-        curl -sL https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg \
-            -o /usr/share/keyrings/proxmox-archive-keyring.gpg
-        cat > /etc/apt/sources.list.d/pve.sources <<'SOURCES'
+
+if [ "${TARGETARCH}" = "amd64" ]; then
+    KEY_URL="https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg"
+    KEY_PATH="/usr/share/keyrings/proxmox-archive-keyring.gpg"
+    URI="http://download.proxmox.com/debian/pve"
+    SUITE="trixie"
+    COMPONENT="pve-no-subscription"
+elif [ "${TARGETARCH}" = "arm64" ]; then
+    KEY_URL="https://mirrors.lierfang.com/pxcloud/lierfang.gpg"
+    KEY_PATH="/etc/apt/trusted.gpg.d/lierfang.gpg"
+    URI="https://mirrors.lierfang.com/pxcloud/pxvirt"
+    SUITE="bookworm"
+    COMPONENT="main"
+fi
+
+curl -sL "${KEY_URL}" -o "${KEY_PATH}"
+
+cat > /etc/apt/sources.list.d/pve.sources <<SOURCES
 Types: deb
-URIs: http://download.proxmox.com/debian/pve
-Suites: trixie
-Components: pve-no-subscription
-Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+URIs: ${URI}
+Suites: ${SUITE}
+Components: ${COMPONENT}
+Signed-By: ${KEY_PATH}
 SOURCES
-        ;;
-    arm64)
-        curl -sL https://mirrors.lierfang.com/pxcloud/lierfang.gpg \
-            -o /etc/apt/trusted.gpg.d/lierfang.gpg
-        cat > /etc/apt/sources.list.d/pve.sources <<'SOURCES'
-Types: deb
-URIs: https://mirrors.lierfang.com/pxcloud/pxvirt
-Suites: bookworm
-Components: main
-Signed-By: /etc/apt/trusted.gpg.d/lierfang.gpg
-SOURCES
-        ;;
-esac
 EOF
 
 # Block unneeded packages in container
@@ -387,9 +387,9 @@ mknod /dev/zfs            c 10 249
 mknod /dev/net/tun        c 10 200
 mknod /dev/loop-control   c 10 237
 mknod /dev/mapper/control c 10 236
-chown root:kvm  /dev/kvm 
+chown root:kvm  /dev/kvm
 chown root:disk /dev/loop-control
-chmod 666 /dev/kvm /dev/zfs 
+chmod 666 /dev/kvm /dev/zfs
 chmod 660 /dev/loop-control
 chmod 600 /dev/mapper/control
 
