@@ -128,6 +128,7 @@ apt-get install -y --no-install-recommends \
 # Create dummy file for pve-manager
 mkdir -p /usr/share/doc/pve-manager
 touch /usr/share/doc/pve-manager/aplinfo.dat
+touch /usr/share/doc/pve-manager/aplinfo-lierfang.dat
 
 # Install Proxmox VE / PXVIRT
 set -e
