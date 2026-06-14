@@ -47,7 +47,6 @@ docker run --detach -it --name pve-1 --hostname pve-1 \
     --security-opt apparmor=unconfined \
     --security-opt systempaths=unconfined \
     --device-cgroup-rule "a *:* rwm" \
-    -v /dev/vfio:/dev/vfio \
     -v /usr/lib/modules:/usr/lib/modules:ro \
     -v /sys/kernel/security:/sys/kernel/security \
     -v ./VM-Backup:/var/lib/vz/dump \
@@ -55,6 +54,13 @@ docker run --detach -it --name pve-1 --hostname pve-1 \
     --env PASSWORD=123 \
     ghcr.io/longqt-sea/proxmox-ve
 ```
+
+> [!Tip]
+> These are optional:<br>
+> `-v /dev/vfio:/dev/vfio` for PCI passthrought on linux host<br>
+> `-v /sys/kernel/security:/sys/kernel/security` for LXC<br>
+> `-v /usr/lib/modules:/usr/lib/modules:ro` for loading kernel modules
+
 Replace `./ISOs` with the path to your ISO folder.
 
 Default root password: `123`

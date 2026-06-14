@@ -31,7 +31,7 @@
 
 # Select base image
 FROM --platform=linux/amd64 debian:13-slim AS base-amd64
-FROM --platform=linux/arm64 debian:12-slim AS base-arm64
+FROM --platform=linux/arm64 debian:13-slim AS base-arm64
 
 FROM base-${TARGETARCH} AS base
 
@@ -63,7 +63,7 @@ elif [ "${TARGETARCH}" = "arm64" ]; then
     KEY_URL="https://mirrors.lierfang.com/pxcloud/lierfang.gpg"
     KEY_PATH="/etc/apt/trusted.gpg.d/lierfang.gpg"
     URI="https://mirrors.lierfang.com/pxcloud/pxvirt"
-    SUITE="bookworm"
+    SUITE="trixie"
     COMPONENT="main"
 fi
 
@@ -144,8 +144,7 @@ apt-get install -y --no-install-recommends \
     pve-manager \
     pve-edk2-firmware \
     proxmox-firewall \
-    proxmox-backup-restore-image \
-    proxmox-offline-mirror-helper
+    proxmox-backup-restore-image
 
 if [ "$TARGETARCH" = "amd64" ]; then
     apt-get install -y --no-install-recommends \
