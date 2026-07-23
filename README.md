@@ -176,12 +176,6 @@ services:
     <<: *systemd
     environment:
       <<: *password
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
-    security_opt:
-      - seccomp=unconfined
-      - apparmor=unconfined
     networks:
       dual_stack:
         ipv4_address: 10.0.99.4
