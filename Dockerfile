@@ -1,4 +1,4 @@
-# Proxmox VE / PXVIRT Multi-Arch Container Dockerfile
+# Proxmox VE Multi-Arch Container Dockerfile
 #
 # SPDX-License-Identifier: GPLv3 or later
 # Copyright (C) 2025-2026 LongQT-sea
@@ -53,19 +53,11 @@ EOF
 RUN <<EOF
 set -e
 
-if [ "${TARGETARCH}" = "amd64" ]; then
-    KEY_URL="https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg"
-    KEY_PATH="/usr/share/keyrings/proxmox-archive-keyring.gpg"
-    URI="http://download.proxmox.com/debian/pve"
-    SUITE="trixie"
-    COMPONENT="pve-no-subscription"
-elif [ "${TARGETARCH}" = "arm64" ]; then
-    KEY_URL="https://mirrors.lierfang.com/pxcloud/lierfang.gpg"
-    KEY_PATH="/etc/apt/trusted.gpg.d/lierfang.gpg"
-    URI="https://mirrors.lierfang.com/pxcloud/pxvirt"
-    SUITE="trixie"
-    COMPONENT="main"
-fi
+KEY_URL="https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg"
+KEY_PATH="/usr/share/keyrings/proxmox-archive-keyring.gpg"
+URI="http://download.proxmox.com/debian/pve"
+SUITE="trixie"
+COMPONENT="pve-no-subscription"
 
 curl -sL "${KEY_URL}" -o "${KEY_PATH}"
 
@@ -144,14 +136,7 @@ apt-get install -y --no-install-recommends \
     pve-manager \
     pve-edk2-firmware \
     proxmox-firewall \
-    proxmox-backup-restore-image
-
-if [ "$TARGETARCH" = "amd64" ]; then
-    apt-get install -y --no-install-recommends \
-        open-iscsi \
-        pve-esxi-import-tools \
-        pve-nvidia-vgpu-helper
-fi
+    open-iscsi
 
 # Cleanup
 apt-get remove -y os-prober || true
@@ -175,13 +160,11 @@ EOF
 RUN <<EOF
 gpg --keyserver keyserver.ubuntu.com --recv-keys \
     A7BCD1420BFE778E \
-    85C25E95A16EB94D \
-    39DE63C7D57A32124785E63DB859507D6B1F46D3
+    85C25E95A16EB94D
 
 gpg --export \
     A7BCD1420BFE778E \
     85C25E95A16EB94D \
-    39DE63C7D57A32124785E63DB859507D6B1F46D3 \
     > /usr/share/doc/pve-manager/trustedkeys.gpg
 rm -rf /root/.gnupg
 EOF
@@ -260,7 +243,7 @@ server=2a10:50c0::ad2:ff
 # Listen only on vmbr1
 interface=vmbr1
 except-interface=lo
-bind-interfaces
+bind-dynamic
 
 # Enable IPv6 RA
 enable-ra
@@ -316,7 +299,7 @@ alias bridge='bridge -color'
 alias free='free -h'
 alias df='df -h'
 alias dus='du -hxs'
-alias dux='du -hxd1'
+alias du1='du -hxd1'
 EOF
 
 # Config journald (store in RAM only)
@@ -347,17 +330,6 @@ done
 # Unmask after boot to fix LXC startup issues (masked earlier in entrypoint script)
 umount /sys/class/drm
 RCLOCAL
-
-if [ "$TARGETARCH" = "arm64" ]; then
-cat >> /etc/rc.local <<'RCLOCAL_ARM'
-
-# Update arm64 LXC template
-pveam update 2>/dev/null
-
-# Remove unsupported amd64 turnkeylinux repo
-rm -f /var/lib/pve-manager/apl-info/releases.turnkeylinux.org
-RCLOCAL_ARM
-fi
 
 echo "" >> /etc/rc.local
 echo "exit 0" >> /etc/rc.local
@@ -422,7 +394,7 @@ LABEL maintainer="LongQT-sea <long025733@gmail.com>"
 LABEL org.opencontainers.image.os="linux"
 LABEL org.opencontainers.image.architecture="${TARGETARCH}"
 LABEL org.opencontainers.image.author="LongQT-sea <long025733@gmail.com>"
-LABEL org.opencontainers.image.description="Proxmox VE / PXVIRT multi-arch container"
+LABEL org.opencontainers.image.description="Proxmox VE multi-arch container"
 
 LABEL io.containers.type="system"
 LABEL io.container.runtime.init="true"

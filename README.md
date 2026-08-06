@@ -9,7 +9,7 @@ Proxmox cluster in Docker. Learn, test, break, and repeat.
 - **Dual-Stack Networking** — IPv4 and IPv6 support with pre-configured NAT bridges
 - **KVM & LXC ready** — Virtual machines and containers work out of the box
 - **Central management** — Optional [Proxmox Datacenter Manager](proxmox-datacenter-manager) container included
-- **ARM64 support** — Proxmox VE on your favorite ARM platform, powered by [PXVIRT](https://docs.pxvirt.lierfang.com/en/README.html)
+- **ARM64 support** — Proxmox VE on your favorite ARM platform
 
 ---
 
@@ -24,8 +24,6 @@ Proxmox cluster in Docker. Learn, test, break, and repeat.
    - Nested virtualization enabled in WSL Settings
 
 > [!Important]
-> For ARM64 platforms:<br>
-> Do not config DHCP when create LXC, config IP inside the LXC instead (e.g. `dhclient eth0`)<br>
 > For latest ARM64 LXC template, visit: https://images.linuxcontainers.org/images/
 
 ---
@@ -70,9 +68,6 @@ Access the web UI at `https://localhost:8006/` (accept the self-signed cert).
 ---
 
 ## Multi-Node Cluster
-> [!Important]
-> If on ARM64 platforms, remove the `pdm:` section because the PDM image is amd64-only.
-
 Deploy 3-node cluster using Docker Compose:
 - Create a project directory and cd into it:
    ```
@@ -171,6 +166,7 @@ services:
   # Optional: Proxmox Datacenter Manager
   pdm:
     image: ghcr.io/longqt-sea/proxmox-datacenter-manager
+    platform: linux/amd64
     container_name: pdm
     hostname: pdm
     <<: *systemd
