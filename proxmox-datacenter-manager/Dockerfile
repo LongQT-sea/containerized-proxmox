@@ -17,7 +17,7 @@
 #    -e PASSWORD=123 \
 #    proxmox-datacenter-manager
 
-FROM debian:13-slim
+FROM debian:13
 
 # Set build time variables
 ARG DEBIAN_FRONTEND=noninteractive
@@ -64,7 +64,6 @@ apt install -y --no-install-recommends \
     bash-completion \
     dbus \
     iproute2 \
-    ifupdown2 \
     iputils-ping \
     isc-dhcp-client \
     sudo \
@@ -80,11 +79,12 @@ locale-gen en_US.UTF-8
 ln -s /usr/bin/busybox /usr/bin/nslookup
 ln -s /usr/bin/busybox /usr/bin/traceroute
 ln -s /usr/bin/busybox /usr/bin/nc
+ln -s /usr/bin/busybox /sbin/brctl
 
 # Install Proxmox Datacenter Manager
 set -e
 apt install -y \
-    proxmox-datacenter-manager \
+    proxmox-datacenter-manager-container-meta \
     proxmox-mail-forward \
     proxmox-offline-mirror-helper
 
@@ -122,11 +122,14 @@ alias ip='ip --color'
 alias free='free -h'
 alias df='df -h'
 alias du='du -hs'
+alias du1='du -hxd1'
 EOF
 
-# Config journald
+# Config journald (store in RAM only)
 COPY <<EOF /etc/systemd/journald.conf.d/container.conf
 [Journal]
+Storage=volatile
+ForwardToSyslog=no
 RuntimeMaxUse=500M
 EOF
 
