@@ -245,11 +245,13 @@ interface=vmbr1
 except-interface=lo
 bind-dynamic
 
-# Enable IPv6 RA
-enable-ra
-
-# Enable IPv6 SLAAC
-dhcp-range=tag:vmbr1,::1,constructor:vmbr1,ra-names,12h
+# IPv6 RA/SLAAC is intentionally disabled: dead:beef::/64 below is not a real
+# routable or ULA prefix, so advertising it makes dual-stack guests prefer a
+# dead IPv6 route over working IPv4 (e.g. wget/curl hang or fail outright).
+# Re-enable only after replacing the prefix with a real ULA (fd00::/8) or a
+# genuinely routed IPv6 block.
+#enable-ra
+#dhcp-range=tag:vmbr1,::1,constructor:vmbr1,ra-names,12h
 
 # IPv4 DHCP range
 dhcp-range=set:vmbr1,172.16.99.10,172.16.99.199,255.255.255.0,12h
